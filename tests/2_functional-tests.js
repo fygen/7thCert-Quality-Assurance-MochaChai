@@ -15,8 +15,8 @@ suite('Functional Tests', function () {
         .request(server)
         .get('/hello')
         .end(function (err, res) {
-          assert.fail(res.status, 200);
-          assert.fail(res.text, 'hello Guest');
+          assert.equal(res.status, 200);
+          assert.equal(res.text, 'hello Guest');
           done();
         });
     });
@@ -24,10 +24,10 @@ suite('Functional Tests', function () {
     test('Test GET /hello with your name', function (done) {
       chai
         .request(server)
-        .get('/hello?name=xy_z')
+        .get('/hello?name=x_yz')
         .end(function (err, res) {
-          assert.fail(res.status, 200);
-          assert.fail(res.text, 'hello xy_z');
+          assert.equal(res.status, 200);
+          assert.equal(res.text, `hello x_yz`);
           done();
         });
     });
@@ -36,31 +36,50 @@ suite('Functional Tests', function () {
       chai
         .request(server)
         .put('/travellers')
-
+        .send({
+          "name": "Cristoforo",
+          "surname": "Colombo"
+        })
         .end(function (err, res) {
-          assert.fail();
-
+          assert.equal(res.status, 200, "response status 200");
+          assert.equal(res.type, "application/json", "typeOf application/json");
+          assert.equal(res.body.name, "Cristoforo", "Cristoforo");
+          assert.equal(res.body.surname, "Colombo", "cololm");
           done();
         });
     });
     // #4
     test('Send {surname: "da Verrazzano"}', function (done) {
-      assert.fail();
-
-      done();
+      chai
+        .request(server)
+        .put("/travellers")
+        .send({
+          "name": "Giovanni",
+          "surname": "da Verrazzano"
+        })
+        .end((err, res) => {
+          assert.equal(res.status, 200, "resp 200");
+          assert.equal(res.type, "application/json", "application/json type");
+          assert.equal(res.body.name, "Giovanni", "name check");
+          assert.equal(res.body.surname, "da Verrazzano", "surname check");
+          done();
+        })
     });
   });
 });
 
 const Browser = require('zombie');
+Browser.site = "localhost:3000";
 
 suite('Functional Tests with Zombie.js', function () {
   this.timeout(5000);
-
-
+  const browser = new Browser();
+  suiteSetup((done) => {
+    return browser.visit("/", done);
+  })
 
   suite('Headless browser', function () {
-    test('should have a working "site" property', function() {
+    test('should have a working "site" property', function () {
       assert.isNotNull(browser.site);
     });
   });
@@ -68,15 +87,27 @@ suite('Functional Tests with Zombie.js', function () {
   suite('"Famous Italian Explorers" form', function () {
     // #5
     test('Submit the surname "Colombo" in the HTML form', function (done) {
-      assert.fail();
-
-      done();
+      browser.fill("surname", "Colombo").then(() => {
+        browser.pressButton("submit", () => {
+          browser.assert.success();
+          browser.assert.text("span#name", "Cristoforo");
+          browser.assert.text("span#surname", "Colombo");
+          browser.assert.elements("span#dates", 1);
+          done();
+        })
+      })
     });
     // #6
     test('Submit the surname "Vespucci" in the HTML form', function (done) {
-      assert.fail();
-
-      done();
+      browser.fill("surname", "Vespucci").then(() => {
+        browser.pressButton("submit", () => {
+          browser.assert.success();
+          browser.assert.text("span#name", "Amerigo");
+          browser.assert.text("span#surname", "Vespucci");
+          browser.assert.elements("span#dates", 1);
+          done();
+        })
+      })
     });
   });
 });
